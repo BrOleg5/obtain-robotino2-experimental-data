@@ -6,7 +6,7 @@ Optionally you can get data from [computer vision system](https://github.com/BrO
 ## Requirements
 
 - CMake v3.0 or later
-- [Robotino2 wrapper](https://github.com/BrOleg5/robotino4-lib) v1.0 of later
+- [Robotino2 wrapper](https://github.com/BrOleg5/robotino2-wrapper) v1.0 of later
 - [Boost shared memory wrapper](https://github.com/BrOleg5/boost-shared-memory-wrapper) v1.2 or later
 - MSVC v19 or later
 
