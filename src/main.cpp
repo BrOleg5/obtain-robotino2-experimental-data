@@ -275,11 +275,11 @@ int main( int argc, char **argv ) {
     shm::Receiver<float> receiver_imu;
 
     if(shm_cam_flag) {
-        receiver_cam = shm::Receiver<double> ("Global\\CameraData");
+        receiver_cam = shm::Receiver<double> ("CameraData");
     }
 
     if(shm_imu_flag) {
-        receiver_imu = shm::Receiver<float> ("Global\\IMUData");
+        receiver_imu = shm::Receiver<float> ("IMUData");
     }
 
     // Open or create csv file 
@@ -325,8 +325,9 @@ int main( int argc, char **argv ) {
                 return 1;
             }
         }
+
         csv << timer.msecsElapsed() << ";";
-        std::cout << timer.msecsElapsed() << std::endl;
+        std::cout << timer.msecsElapsed() << "\r";
 
         csv << vx << ";" << vy << ";" << omega << ";";
 
