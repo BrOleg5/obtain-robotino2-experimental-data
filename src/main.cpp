@@ -360,10 +360,14 @@ int main( int argc, char **argv ) {
             actual_current[i] = buf;
         }
         
-        x_current = -0.577f * velocity_sign[0] * actual_current[0] + 0.577f * velocity_sign[2] * actual_current[2];
-        y_current = 0.333f * velocity_sign[0] * actual_current[0] - 0.667f * velocity_sign[1] * actual_current[1] + 
-                        0.333f * velocity_sign[2] * actual_current[2];
-        rot_current = arr_sum(actual_current, 3) / 3;
+        float signed_current[3] = [0];
+        for(size_t i = 0; i < 3; i++) {
+            signed_current[i] = actual_current[i] * velocity_sign[i];
+        }
+        x_current = -0.577f * signed_current[0] + 0.577f * signed_current[2];
+        y_current = 0.333f * signed_current[0] - 0.667f * signed_current[1] + 
+                    0.333f * signed_current[2];
+        rot_current = arr_sum(signed_current, 3) / 3;
         csv << x_current << ";" << y_current << ";" << rot_current << ";";
         
         if (shm_cam_flag){
