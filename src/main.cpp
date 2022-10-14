@@ -271,11 +271,11 @@ int main( int argc, char **argv ) {
         }
     }
 
-    shm::Receiver<double> receiver_cam;
+    shm::Receiver<float> receiver_cam;
     shm::Receiver<float> receiver_imu;
 
     if(shm_cam_flag) {
-        receiver_cam = shm::Receiver<double> ("CameraData");
+        receiver_cam = shm::Receiver<float> ("CameraData");
     }
 
     if(shm_imu_flag) {
@@ -360,7 +360,7 @@ int main( int argc, char **argv ) {
             actual_current[i] = buf;
         }
         
-        float signed_current[3] = [0];
+        float signed_current[3] = { 0.0f };
         for(size_t i = 0; i < 3; i++) {
             signed_current[i] = actual_current[i] * velocity_sign[i];
         }
