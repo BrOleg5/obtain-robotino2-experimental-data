@@ -7,6 +7,9 @@
 #include <iomanip>
 #include <cmath>
 
+#include "rec/core_lt/Timer.h"
+#include "rec/core_lt/utils.h"
+
 /**
  * Summing float elements of array
  * 
@@ -14,7 +17,7 @@
  * @param n array size.
  * @return sum of array elements.
  */
-float arr_sum(float* array, size_t n);
+float arr_sum(float* array, unsigned char n);
 
 /**
  * Sign function.
@@ -75,7 +78,7 @@ int main( int argc, char **argv ) {
                       << "  " << std::setw(st_size) << "-vy <speed_along_y>" << "Set Robotino2 <speed_along_y> in m/s.\n"
                       << "  " << std::setw(st_size) << "-omega <rotation_velocity>" << "Set Robotino2 <rotation_velocity> in rad/s.\n"
                       << "  " << std::setw(st_size) << "-v <speed>" << "Set Robotino2 <speed> in m/s in polar coordinate system.\n"
-                      << "  " << std::setw(st_size) << "-ang <angle>" << "Set Robotino2 <angle> of speed vector in degree in polar coordinate system.\n"
+                      << "  " << std::setw(st_size) << "-ang <angle>" << "Set Robotino2 <angle> of speed array in degree in polar coordinate system.\n"
                       << "  " << std::setw(st_size) << "-accel <acceleration>" << "Set linear acceleration of robot in m/s^2.\n"
                       << "  " << std::setw(st_size) << "-v1 <velocity>" << "Set Robotino2 motor 1 <velocity> in rad/s.\n"
                       << "  " << std::setw(st_size) << "-v2 <velocity>" << "Set Robotino2 motor 2 <velocity> in rad/s.\n"
@@ -304,7 +307,7 @@ int main( int argc, char **argv ) {
 
     double prev_cam_frame = 0;
 
-    std::vector<float> motor_speed = {0, 0, 0};
+    std::array<float, 3> motor_speed = {0, 0, 0};
     
     // Calculate acceleration time
     float accel_time = 0.f; // in ms
@@ -338,7 +341,7 @@ int main( int argc, char **argv ) {
             motor_speed[1] = m2_vel;
             motor_speed[2] = m3_vel;
             try {
-                robotino.set_motors_speed(motor_speed);
+                robotino.set_motor_speeds(motor_speed);
             }
             catch(const std::invalid_argument& e) {
                 std::cout << "Method set_motors_speed() failed with error: " << e.what();
@@ -364,25 +367,25 @@ int main( int argc, char **argv ) {
             motor_speed = robotino.robot_speed_to_motor_speeds(vx, vy, omega);
         }
         
-        for (size_t i = 0; i < 3; i++)
+        for (unsigned char i = 0; i < 3; i++)
         {
             csv << motor_speed[i] << ';';
         }
         
-        for (size_t i = 0; i < 3; i++)
+        for (unsigned char i = 0; i < 3; i++)
         {
             csv << robotino.get_actual_position(i) << ';';
         }
         
         float buf = 0;
-        for (size_t i = 0; i < 3; i++)
+        for (unsigned char i = 0; i < 3; i++)
         {
             buf = robotino.get_actual_velocity(i);
             csv << buf << ';';
             velocity_sign[i] = sgn(buf);
         }
         
-        for (size_t i = 0; i < 3; i++)
+        for (unsigned char i = 0; i < 3; i++)
         {
             buf = robotino.get_actual_current(i);
             csv << buf << ';';
@@ -390,7 +393,7 @@ int main( int argc, char **argv ) {
         }
         
         float signed_current[3] = { 0.0f };
-        for(size_t i = 0; i < 3; i++) {
+        for(unsigned char i = 0; i < 3; i++) {
             signed_current[i] = actual_current[i] * velocity_sign[i];
         }
         x_current = -0.577f * signed_current[0] + 0.577f * signed_current[2];
@@ -402,7 +405,7 @@ int main( int argc, char **argv ) {
         if (shm_cam_flag){
             if (receiver_cam.data->at(0) != prev_cam_frame) {
                 // std::cout << "|" << std::setw(15) << receiver_cam.data->at(0);
-                for (size_t i = 1; i < 7; i++)
+                for (unsigned char i = 1; i < 7; i++)
                 {
                     csv << receiver_cam.data->at(i) << ';';
                     // std::cout << "|" << std::setw(15) << receiver_cam.data->at(i);
@@ -411,11 +414,11 @@ int main( int argc, char **argv ) {
                 prev_cam_frame = receiver_cam.data->at(0);
             }
             else {
-                for (size_t i = 1; i < 4; i++)
+                for (unsigned char i = 1; i < 4; i++)
                 {
                     csv << receiver_cam.data->at(i) << ';';
                 }
-                for (size_t i = 0; i < 3; i++)
+                for (unsigned char i = 0; i < 3; i++)
                 {
                     csv << 0 << ';';
                 }
@@ -423,7 +426,7 @@ int main( int argc, char **argv ) {
         }
         if (shm_imu_flag) {
             // std::cout << "|" << std::setw(15) << receiver_imu.data->at(0);
-            for (size_t i = 1; i < 7; i++)
+            for (unsigned char i = 1; i < 7; i++)
             {
                 csv << receiver_imu.data->at(i) << ';';
                 // std::cout << "|" << std::setw(15) << receiver_imu.data->at(i);
@@ -435,16 +438,16 @@ int main( int argc, char **argv ) {
         time_ms = timer.msecsElapsed();
     }
     robotino.set_robot_speed(0, 0, 0);
-    robotino.reset_motors_position();
+    robotino.reset_motor_positions();
     rec::core_lt::msleep(1000);
     timer.reset();
     csv.close();
     return 0;
 }
 
-float arr_sum(float* array, size_t n){
+float arr_sum(float* array, unsigned char n){
     float s = 0;
-    for (size_t i = 0; i < n; i++)
+    for (unsigned char i = 0; i < n; i++)
     {
         s += array[i];
     }

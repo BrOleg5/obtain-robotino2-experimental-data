@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 
-project(ObtainRobotino4SensorData VERSION 1.0 DESCRIPTION "Read Robotino2 sensor data and get its location by webcam.")
+project(ObtainRobotino4SensorData VERSION 1.1 DESCRIPTION "Read Robotino2 sensor data and get its location by webcam.")
 
 include(GNUInstallDirs)
 
