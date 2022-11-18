@@ -11,6 +11,7 @@
 #include <string>
 #include <iomanip>
 #include <cmath>
+#include <array>
 #include <thread>
 #include <mutex>
 #include <atomic>
@@ -91,10 +92,10 @@ class RobotData {
         float angle; // in degree
         MovementType move_type;
 
-        std::vector<float> motor_speed;
-        std::vector<int> actual_position;
-        std::vector<float> actual_velocity;
-        std::vector<float> actual_current;
+        std::array<float, 3> motor_speed;
+        std::array<int, 3> actual_position;
+        std::array<float, 3> actual_velocity;
+        std::array<float, 3> actual_current;
 
         RobotData(): vx(0.0f), vy(0.0f), omega(0.0f), speed(0.0f), angle(0.0f),
                          motor_speed({0.0f, 0.0f, 0.0f}), actual_position({0, 0, 0}),
@@ -247,7 +248,7 @@ void read_robot_sensors(Robotino2& robotino, RobotData& robot_buffer, std::mutex
         std::this_thread::sleep_for(std::chrono::milliseconds(35));
     }
     robotino.set_robot_speed(0, 0, 0);
-    robotino.reset_motors_position();
+    robotino.reset_motor_positions();
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 }
 
