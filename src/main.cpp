@@ -28,8 +28,11 @@ int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
 
-int main( int argc, char **argv ) {
+inline float deg2rad(float deg) {
+    return deg * (float)PI / 180;
+}
 
+int main( int argc, char **argv ) {
     // IP-addres Robotino 4
     std::string ip_addr = "172.26.1.0";
     // Path to csv file
@@ -46,6 +49,7 @@ int main( int argc, char **argv ) {
     bool is_polar = false;
     float speed = 0; // in m/s
     float angle = 0; // in degree
+    float acceleration = 0; // in m/s^2
     // Motors set point velocities
     float m1_vel = 0;
     float m2_vel = 0;
@@ -72,6 +76,7 @@ int main( int argc, char **argv ) {
                       << "  " << std::setw(st_size) << "-omega <rotation_velocity>" << "Set Robotino2 <rotation_velocity> in rad/s.\n"
                       << "  " << std::setw(st_size) << "-v <speed>" << "Set Robotino2 <speed> in m/s in polar coordinate system.\n"
                       << "  " << std::setw(st_size) << "-ang <angle>" << "Set Robotino2 <angle> of speed vector in degree in polar coordinate system.\n"
+                      << "  " << std::setw(st_size) << "-accel <acceleration>" << "Set linear acceleration of robot in m/s^2.\n"
                       << "  " << std::setw(st_size) << "-v1 <velocity>" << "Set Robotino2 motor 1 <velocity> in rad/s.\n"
                       << "  " << std::setw(st_size) << "-v2 <velocity>" << "Set Robotino2 motor 2 <velocity> in rad/s.\n"
                       << "  " << std::setw(st_size) << "-v3 <velocity>" << "Set Robotino2 motor 3 <velocity> in rad/s.\n"
@@ -112,6 +117,9 @@ int main( int argc, char **argv ) {
         if (cmdOptionExists(argv, argv+argc, "-ang")){
             angle = (float)atof(getCmdOption(argv, argv+argc, "-ang"));
             is_polar = true;
+        }
+        if (cmdOptionExists(argv, argv+argc, "-accel")) {
+            acceleration = (float)atof(getCmdOption(argv, argv+argc, "-accel"));
         }
         //Set motor 1 speed
         if (cmdOptionExists(argv, argv+argc, "-v1")){
@@ -298,11 +306,32 @@ int main( int argc, char **argv ) {
 
     std::vector<float> motor_speed = {0, 0, 0};
     
+    // Calculate acceleration time
+    float accel_time = 0.f; // in ms
+    float minimal_linear_speed = 0.03f; // in m/s
+    if(!is_polar) {
+        float linear_speed = std::sqrt(std::pow(vx, 2) + std::pow(vy, 2));
+        accel_time = (linear_speed - minimal_linear_speed) / acceleration * 1000.f;
+    }
+    else {
+        accel_time = (speed - minimal_linear_speed) / acceleration * 1000.f;
+    }
+    std::cout << "Acceleration time: " << accel_time << " ms" << '\n';
+    float current_speed = 0;
+
     timer.start();
-    while (timer.msecsElapsed() <= test_duration) {
+    float time_ms = timer.msecsElapsed();
+    while ((unsigned int)time_ms <= test_duration) {
         if (is_polar){
-            vx = speed * std::cos(angle * (float)PI / 180);
-            vy = speed * std::sin(angle * (float)PI / 180);
+            if(time_ms < accel_time) {
+                current_speed = minimal_linear_speed + time_ms / 1000.f * acceleration;
+                vx = current_speed * std::cos(deg2rad(angle));
+                vy = current_speed * std::sin(deg2rad(angle));
+            }
+            else {
+                vx = speed * std::cos(deg2rad(angle));
+                vy = speed * std::sin(deg2rad(angle));
+            }
         }
         if (is_motor_sets){
             motor_speed[0] = m1_vel;
@@ -326,10 +355,10 @@ int main( int argc, char **argv ) {
             }
         }
 
-        csv << timer.msecsElapsed() << ";";
-        std::cout << timer.msecsElapsed() << "\r";
+        csv << time_ms << ';';
+        std::cout << time_ms << '\r';
 
-        csv << vx << ";" << vy << ";" << omega << ";";
+        csv << vx << ';' << vy << ';' << omega << ';';
 
         if(!is_motor_sets){
             motor_speed = robotino.robot_speed_to_motor_speeds(vx, vy, omega);
@@ -337,26 +366,26 @@ int main( int argc, char **argv ) {
         
         for (size_t i = 0; i < 3; i++)
         {
-            csv << motor_speed[i] << ";";
+            csv << motor_speed[i] << ';';
         }
         
         for (size_t i = 0; i < 3; i++)
         {
-            csv << robotino.get_actual_position(i) << ";";
+            csv << robotino.get_actual_position(i) << ';';
         }
         
         float buf = 0;
         for (size_t i = 0; i < 3; i++)
         {
             buf = robotino.get_actual_velocity(i);
-            csv << buf << ";";
+            csv << buf << ';';
             velocity_sign[i] = sgn(buf);
         }
         
         for (size_t i = 0; i < 3; i++)
         {
             buf = robotino.get_actual_current(i);
-            csv << buf << ";";
+            csv << buf << ';';
             actual_current[i] = buf;
         }
         
@@ -368,14 +397,14 @@ int main( int argc, char **argv ) {
         y_current = 0.333f * signed_current[0] - 0.667f * signed_current[1] + 
                     0.333f * signed_current[2];
         rot_current = arr_sum(signed_current, 3) / 3;
-        csv << x_current << ";" << y_current << ";" << rot_current << ";";
+        csv << x_current << ';' << y_current << ';' << rot_current << ';';
         
         if (shm_cam_flag){
             if (receiver_cam.data->at(0) != prev_cam_frame) {
                 // std::cout << "|" << std::setw(15) << receiver_cam.data->at(0);
                 for (size_t i = 1; i < 7; i++)
                 {
-                    csv << receiver_cam.data->at(i) << ";";
+                    csv << receiver_cam.data->at(i) << ';';
                     // std::cout << "|" << std::setw(15) << receiver_cam.data->at(i);
                 }
                 // std::cout << "|\n";
@@ -384,11 +413,11 @@ int main( int argc, char **argv ) {
             else {
                 for (size_t i = 1; i < 4; i++)
                 {
-                    csv << receiver_cam.data->at(i) << ";";
+                    csv << receiver_cam.data->at(i) << ';';
                 }
                 for (size_t i = 0; i < 3; i++)
                 {
-                    csv << 0 << ";";
+                    csv << 0 << ';';
                 }
             }
         }
@@ -396,13 +425,14 @@ int main( int argc, char **argv ) {
             // std::cout << "|" << std::setw(15) << receiver_imu.data->at(0);
             for (size_t i = 1; i < 7; i++)
             {
-                csv << receiver_imu.data->at(i) << ";";
+                csv << receiver_imu.data->at(i) << ';';
                 // std::cout << "|" << std::setw(15) << receiver_imu.data->at(i);
             }
             // std::cout << "|\n";
         }
-        csv << "\n";
+        csv << '\n';
         rec::core_lt::msleep(measure_pause);
+        time_ms = timer.msecsElapsed();
     }
     robotino.set_robot_speed(0, 0, 0);
     robotino.reset_motors_position();
